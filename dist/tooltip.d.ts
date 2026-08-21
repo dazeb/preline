@@ -33,6 +33,8 @@ declare class HSTooltip extends HSBasePlugin<{}> implements ITooltip {
 	private onToggleMouseEnterListener;
 	private onToggleMouseLeaveListener;
 	private onToggleHandleListener;
+	private onToggleTouchListener;
+	private onDocumentTouchListener;
 	constructor(el: HTMLElement, options?: {}, events?: {});
 	private toggleClick;
 	private toggleFocus;

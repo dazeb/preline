@@ -1,6 +1,6 @@
 /*
  * HSDropdown
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -78,7 +78,7 @@ class HSDropdown
 		this.closers =
 			Array.from(this.el.querySelectorAll(':scope .hs-dropdown-close')) || null;
 		this.menu = this.el.querySelector(':scope > .hs-dropdown-menu');
-		this.eventMode = getClassProperty(this.el, '--trigger', 'click');
+		this.eventMode = this.getEventMode();
 		this.closeMode = getClassProperty(this.el, '--auto-close', 'true');
 		this.hasAutofocus = stringToBoolean(
 			getClassProperty(this.el, '--has-autofocus', 'true') || 'true',
@@ -92,6 +92,21 @@ class HSDropdown
 		this.onCloserClickListener = [];
 
 		if (this.toggle && this.menu) this.init();
+	}
+
+	private getEventMode(): string {
+		const parentDropdown =
+			this.el.parentElement?.closest<HTMLElement>('.hs-dropdown');
+
+		if (!parentDropdown) {
+			return getClassProperty(this.el, '--trigger', 'click');
+		}
+
+		parentDropdown.style.setProperty('--trigger', 'hs-init');
+		const computed = getClassProperty(this.el, '--trigger', '');
+		parentDropdown.style.removeProperty('--trigger');
+
+		return !computed || computed === 'hs-init' ? 'click' : computed;
 	}
 
 	private elementMouseEnter() {
@@ -113,16 +128,19 @@ class HSDropdown
 	}
 
 	private handleTouchStart(evt: TouchEvent): void {
-		this.longPressTimer = window.setTimeout(() => {
-			evt.preventDefault();
+		evt.preventDefault();
 
-			const touch = evt.touches[0];
+		const touch = evt.touches[0];
+		const clientX = touch?.clientX ?? 0;
+		const clientY = touch?.clientY ?? 0;
+
+		this.longPressTimer = window.setTimeout(() => {
 			const contextMenuEvent = new MouseEvent('contextmenu', {
 				bubbles: true,
 				cancelable: true,
 				view: window,
-				clientX: touch.clientX,
-				clientY: touch.clientY,
+				clientX,
+				clientY,
 			});
 
 			if (this.toggle) this.toggle.dispatchEvent(contextMenuEvent);
@@ -168,7 +186,7 @@ class HSDropdown
 	}
 
 	resizeHandler() {
-		this.eventMode = getClassProperty(this.el, '--trigger', 'click');
+		this.eventMode = this.getEventMode();
 		this.closeMode = getClassProperty(this.el, '--auto-close', 'true');
 		this.hasAutofocus = stringToBoolean(
 			getClassProperty(this.el, '--has-autofocus', 'true') || 'true',
@@ -362,6 +380,21 @@ class HSDropdown
 		}
 	}
 
+	private getNextFocusableElement(
+		currentElement: HTMLElement,
+	): HTMLElement | null {
+		const focusableElements =
+			'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+		const allFocusable = Array.from(
+			document.querySelectorAll(focusableElements),
+		) as HTMLElement[];
+		const currentIndex = allFocusable.indexOf(currentElement);
+
+		return currentIndex < allFocusable.length - 1
+			? allFocusable[currentIndex + 1]
+			: null;
+	}
+
 	private destroyFloatingUI() {
 		const scope = (
 			window.getComputedStyle(this.el).getPropertyValue('--scope') || ''
@@ -393,7 +426,9 @@ class HSDropdown
 		}
 
 		const menuItems = this.menu.querySelectorAll(
-			'a:not([hidden]), button:not([hidden]), [role="menuitem"]:not([hidden])',
+			// It was commented because a conflict with other plugins. We need to be sure that the focused element is the menu item.
+			// 'a:not([hidden]), button:not([hidden]), [role="menuitem"]:not([hidden])',
+			'[role="menuitem"]:not([hidden])',
 		);
 
 		if (menuItems.length > 0) {
@@ -428,7 +463,6 @@ class HSDropdown
 			window.getComputedStyle(this.el).getPropertyValue('--adaptive') ||
 			'adaptive'
 		).replace(' ', '');
-
 		const strategy = strategyCss as Strategy;
 		const offsetValue = parseInt(offsetCss, 10);
 		const placement: Placement = POSITIONS[placementCss] || 'bottom-start';
@@ -801,6 +835,18 @@ class HSDropdown
 			HSDropdown.closeCurrentlyOpened(evtTarget as HTMLElement);
 		});
 
+		document.addEventListener(
+			'touchstart',
+			(evt) => {
+				const evtTarget = evt.target as HTMLElement;
+
+				if (!evtTarget.closest('.hs-dropdown')) {
+					HSDropdown.closeCurrentlyOpened(evtTarget as HTMLElement);
+				}
+			},
+			{ passive: true },
+		);
+
 		let prevWidth = window.innerWidth;
 		window.addEventListener('resize', () => {
 			if (window.innerWidth !== prevWidth) {
@@ -991,29 +1037,8 @@ class HSDropdown
 					onEnd: () => {
 						if (this.isOpened()) this.onStartEnd(false);
 					},
-					onTab: () => {
-						setTimeout(() => {
-							const active = document.activeElement as HTMLElement | null;
-							const menuRoot = active.closest('.hs-dropdown-menu');
-
-							if (active && menuRoot) {
-								const submenuToggle = active.closest<HTMLElement>(
-									'.hs-dropdown-toggle, [data-hs-dropdown-toggle]',
-								);
-
-								if (submenuToggle) {
-									submenuToggle.click();
-
-									return;
-								}
-
-								active.focus();
-
-								return;
-							} else if (this.isOpened()) this.close();
-							else return;
-						}, 100);
-					},
+					onTab: () => this.onTabOut(),
+					onShiftTab: () => this.onTabOut(),
 					onFirstLetter: (key: string) => {
 						const active = document.activeElement as HTMLElement | null;
 						const isInput = active?.matches('input, textarea');
@@ -1029,6 +1054,30 @@ class HSDropdown
 					onFirstLetter: false,
 				},
 			);
+	}
+
+	private onTabOut(): void {
+		setTimeout(() => {
+			const active = document.activeElement as HTMLElement | null;
+			const menuRoot = active.closest('.hs-dropdown-menu');
+
+			if (active && menuRoot) {
+				const submenuToggle = active.closest<HTMLElement>(
+					'.hs-dropdown-toggle, [data-hs-dropdown-toggle]',
+				);
+
+				if (submenuToggle) {
+					submenuToggle.click();
+
+					return;
+				}
+
+				active.focus();
+
+				return;
+			} else if (this.isOpened()) this.close();
+			else return;
+		}, 100);
 	}
 
 	private onFirstLetter(key: string): void {

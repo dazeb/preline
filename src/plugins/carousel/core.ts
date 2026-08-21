@@ -1,6 +1,6 @@
 /*
  * HSCarousel
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -22,6 +22,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 	private readonly isAutoPlay: boolean;
 	private readonly isCentered: boolean;
 	private readonly isDraggable: boolean;
+	private readonly dragThreshold: number;
 	private readonly isInfiniteLoop: boolean;
 	private readonly isRTL: boolean;
 	private readonly isSnap: boolean;
@@ -52,6 +53,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 	private isScrolling: ReturnType<typeof setTimeout>;
 	private isDragging: boolean;
 	private dragStartX: number | null;
+	private dragStartTime: number | null;
 	private initialTranslateX: number | null;
 
 	// Touch events' help variables
@@ -115,6 +117,10 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 			typeof concatOptions.isDraggable !== 'undefined'
 				? concatOptions.isDraggable
 				: false;
+		this.dragThreshold =
+			typeof concatOptions.dragThreshold === 'number'
+				? concatOptions.dragThreshold
+				: 0.2;
 		this.isInfiniteLoop =
 			typeof concatOptions.isInfiniteLoop !== 'undefined'
 				? concatOptions.isInfiniteLoop
@@ -160,6 +166,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 		// Drag events' help variables
 		this.isDragging = false;
 		this.dragStartX = null;
+		this.dragStartTime = null;
 		this.initialTranslateX = null;
 
 		// Touch events' help variables
@@ -342,7 +349,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 
 		this.el.classList.add('init');
 
-		if (!this.isSnap) {
+		if (!this.isSnap && !this.isDraggable) {
 			this.onElementTouchStartListener = (evt: TouchEvent) =>
 				this.elementTouchStart(evt);
 			this.onElementTouchEndListener = (evt: TouchEvent) =>
@@ -416,6 +423,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 
 		this.isDragging = true;
 		this.dragStartX = this.getEventX(evt);
+		this.dragStartTime = Date.now();
 		this.initialTranslateX = this.isRTL
 			? this.getTranslateXValue()
 			: -this.getTranslateXValue();
@@ -464,11 +472,35 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 		if (!this.isDragging) return;
 		this.isDragging = false;
 
+		const FLICK_MAX_DURATION = 250;
+		const FLICK_MIN_DISTANCE = 20;
+
 		const containerWidth = this.sliderWidth;
 		const itemWidth = containerWidth / this.getCurrentSlidesQty();
 		const currentTranslateX = this.getTranslateXValue();
-		let closestIndex = Math.round(currentTranslateX / itemWidth);
-		if (this.isRTL) closestIndex = Math.round(currentTranslateX / itemWidth);
+		const anchorTranslateX = this.getTargetTranslateX(this.currentIndex);
+		const dragOffset = currentTranslateX - anchorTranslateX;
+		const dragDuration = this.dragStartTime
+			? Date.now() - this.dragStartTime
+			: Infinity;
+		const distanceThreshold = itemWidth * this.dragThreshold;
+		const isFlick =
+			dragDuration <= FLICK_MAX_DURATION &&
+			Math.abs(dragOffset) >= FLICK_MIN_DISTANCE;
+		let closestIndex = this.currentIndex;
+
+		if (dragOffset > distanceThreshold || (isFlick && dragOffset > 0)) {
+			closestIndex = this.currentIndex + 1;
+		} else if (dragOffset < -distanceThreshold || (isFlick && dragOffset < 0)) {
+			closestIndex = this.currentIndex - 1;
+		}
+
+		const maxIndex = this.isCentered
+			? this.slides.length -
+				this.getCurrentSlidesQty() +
+				(this.getCurrentSlidesQty() - 1)
+			: this.slides.length - this.getCurrentSlidesQty();
+		closestIndex = Math.max(0, Math.min(closestIndex, maxIndex));
 
 		this.inner.classList.remove('dragging');
 
@@ -477,6 +509,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 			if (this.dots) this.setCurrentDot();
 
 			this.dragStartX = null;
+			this.dragStartTime = null;
 			this.initialTranslateX = null;
 
 			this.inner.querySelectorAll('a.prevented-click').forEach((el) => {
@@ -833,12 +866,36 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 		}
 	}
 
+	private getTargetTranslateX(index: number): number {
+		const containerWidth = this.sliderWidth;
+		const itemWidth = containerWidth / this.getCurrentSlidesQty();
+		let translateX = index * itemWidth;
+
+		if (this.isCentered && !this.isSnap) {
+			const centeredOffset = (containerWidth - itemWidth) / 2;
+
+			if (index === 0) translateX = -centeredOffset;
+			else if (
+				index >=
+				this.slides.length -
+					this.getCurrentSlidesQty() +
+					(this.getCurrentSlidesQty() - 1)
+			) {
+				const totalSlideWidth = this.slides.length * itemWidth;
+
+				translateX = totalSlideWidth - containerWidth + centeredOffset;
+			} else translateX = index * itemWidth - centeredOffset;
+		}
+
+		return translateX;
+	}
+
 	private calculateTransform(currentIdx?: number | undefined): void {
 		if (currentIdx !== undefined) this.currentIndex = currentIdx;
 
 		const containerWidth = this.sliderWidth;
 		const itemWidth = containerWidth / this.getCurrentSlidesQty();
-		let translateX = this.currentIndex * itemWidth;
+		const translateX = this.getTargetTranslateX(this.currentIndex);
 
 		if (this.isSnap && !this.isCentered) {
 			if (
@@ -847,22 +904,6 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 			) {
 				this.container.scrollLeft = this.container.scrollWidth;
 			}
-		}
-
-		if (this.isCentered && !this.isSnap) {
-			const centeredOffset = (containerWidth - itemWidth) / 2;
-
-			if (this.currentIndex === 0) translateX = -centeredOffset;
-			else if (
-				this.currentIndex >=
-				this.slides.length -
-					this.getCurrentSlidesQty() +
-					(this.getCurrentSlidesQty() - 1)
-			) {
-				const totalSlideWidth = this.slides.length * itemWidth;
-
-				translateX = totalSlideWidth - containerWidth + centeredOffset;
-			} else translateX = this.currentIndex * itemWidth - centeredOffset;
 		}
 
 		if (!this.isSnap) this.setTransform(translateX);
@@ -917,10 +958,16 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 	}
 
 	public goToPrev() {
+		const statement = this.isCentered
+			? this.slides.length -
+				this.getCurrentSlidesQty() +
+				(this.getCurrentSlidesQty() - 1)
+			: this.slides.length - this.getCurrentSlidesQty();
+
 		if (this.currentIndex > 0) {
 			this.currentIndex--;
 		} else {
-			this.currentIndex = this.slides.length - this.getCurrentSlidesQty();
+			this.currentIndex = statement;
 		}
 
 		this.fireEvent('update', this.currentIndex);
@@ -1075,6 +1122,7 @@ class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICarousel {
 
 		this.isDragging = false;
 		this.dragStartX = null;
+		this.dragStartTime = null;
 		this.initialTranslateX = null;
 
 		window.$hsCarouselCollection = window.$hsCarouselCollection.filter(

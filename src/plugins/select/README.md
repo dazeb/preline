@@ -336,6 +336,10 @@ Select instances emit events that can be listened to for selection lifecycle hoo
 | Event Name | When Fired | Callback Parameter | Description |
 | --- | --- | --- | --- |
 | `on:change` | When the selected value changes | `string | string[]` (new selected value; array in multi-select / tags mode) | Fires after the user picks an option or removes a tag. |
+| `on:request` | Right before an `apiUrl` request is sent (search or `apiLoadMore` pagination) | `{ url: string }` | Useful for showing a loading indicator. |
+| `on:requestCompleted` | After an `apiUrl` request settles, success or failure | `{ url: string, data?: unknown, error?: unknown }` | `data` holds the parsed response on success, `error` is set on failure. Not fired when a request is superseded/aborted (e.g. a newer search query). |
+
+Both are also dispatched as DOM `CustomEvent`s (`request.hs.select` / `requestCompleted.hs.select`) with the same payload under `event.detail.payload`, so they can be listened to via `addEventListener` as well as `element.on(...)`.
 
 ### Event Usage Example
 
@@ -350,6 +354,18 @@ if (instance) {
   element.on('change', (value) => {
     console.log('Selected value:', value);
     // value is a string for single-select, string[] for multi-select / tags mode
+  });
+
+  // Listen for API request lifecycle (only relevant when `apiUrl` is set)
+  element.on('request', ({ url }) => {
+    console.log('Requesting:', url);
+    // e.g. show a loading spinner
+  });
+
+  element.on('requestCompleted', ({ data, error }) => {
+    if (error) console.error('Request failed:', error);
+    else console.log('Request completed with:', data);
+    // e.g. hide the loading spinner
   });
 }
 ```

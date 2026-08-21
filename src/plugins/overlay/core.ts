@@ -1,6 +1,6 @@
 /*
  * HSOverlay
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -871,6 +871,44 @@ class HSOverlay extends HSBasePlugin<{}> implements IOverlay {
 	}
 
 	// Accessibility methods
+	private moveFocusWithinOverlay(
+		evt: KeyboardEvent,
+		direction: 'next' | 'prev',
+	): void {
+		if (!this.isOpened() || !this.isTabAccessibilityLimited) return;
+
+		const focusableElements = Array.from(
+			this.el.querySelectorAll<HTMLElement>(
+				'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+			),
+		).filter(
+			(el) => !el.hidden && window.getComputedStyle(el).display !== 'none',
+		);
+
+		if (focusableElements.length === 0) return;
+
+		const focusedElement = this.el.querySelector(':focus');
+		const currentIndex = focusedElement
+			? focusableElements.indexOf(focusedElement as HTMLElement)
+			: -1;
+
+		if (direction === 'prev') {
+			if (currentIndex <= 0) {
+				focusableElements[focusableElements.length - 1].focus();
+			} else {
+				focusableElements[currentIndex - 1].focus();
+			}
+		} else {
+			if (currentIndex === focusableElements.length - 1) {
+				focusableElements[0].focus();
+			} else {
+				focusableElements[currentIndex + 1].focus();
+			}
+		}
+
+		evt.preventDefault();
+	}
+
 	private setupAccessibility(): void {
 		this.accessibilityComponent =
 			window.HSAccessibilityObserver.registerComponent(
@@ -884,43 +922,10 @@ class HSOverlay extends HSBasePlugin<{}> implements IOverlay {
 							this.close();
 						}
 					},
-					onTab: () => {
-						if (!this.isOpened() || !this.isTabAccessibilityLimited) return;
-
-						const focusableElements = Array.from(
-							this.el.querySelectorAll<HTMLElement>(
-								'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-							),
-						).filter(
-							(el) =>
-								!el.hidden && window.getComputedStyle(el).display !== 'none',
-						);
-
-						if (focusableElements.length === 0) return;
-
-						const focusedElement = this.el.querySelector(':focus');
-						const currentIndex = focusedElement
-							? focusableElements.indexOf(focusedElement as HTMLElement)
-							: -1;
-						const isShiftPressed =
-							window.event instanceof KeyboardEvent && window.event.shiftKey;
-
-						if (isShiftPressed) {
-							if (currentIndex <= 0) {
-								focusableElements[focusableElements.length - 1].focus();
-							} else {
-								focusableElements[currentIndex - 1].focus();
-							}
-						} else {
-							if (currentIndex === focusableElements.length - 1) {
-								focusableElements[0].focus();
-							} else {
-								focusableElements[currentIndex + 1].focus();
-							}
-						}
-
-						window.event?.preventDefault();
-					},
+					onTab: (evt: KeyboardEvent) =>
+						this.moveFocusWithinOverlay(evt, 'next'),
+					onShiftTab: (evt: KeyboardEvent) =>
+						this.moveFocusWithinOverlay(evt, 'prev'),
 				},
 				this.isOpened(),
 				'Overlay',

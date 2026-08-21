@@ -73,10 +73,16 @@ module.exports = {
 		VanillaCalendarPro: 'VanillaCalendarPro',
 	},
 	optimization: {
+		moduleIds: 'deterministic',
 		minimize: true,
 		minimizer: [
 			new TerserPlugin({
 				extractComments: false,
+				terserOptions: {
+					format: {
+						comments: /^!|@preserve|@license|@cc_on/i,
+					},
+				},
 			}),
 		],
 	},

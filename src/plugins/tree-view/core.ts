@@ -1,6 +1,6 @@
 /*
  * HSTreeView
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -50,7 +50,7 @@ class HSTreeView extends HSBasePlugin<ITreeViewOptions> implements ITreeView {
 
 		this.controlBy = concatOptions?.controlBy || 'button';
 		this.autoSelectChildren = concatOptions?.autoSelectChildren || false;
-		this.isIndeterminate = concatOptions?.isIndeterminate || true;
+		this.isIndeterminate = concatOptions?.isIndeterminate ?? true;
 
 		this.onElementClickListener = [];
 		this.onControlChangeListener = [];

@@ -99,7 +99,7 @@ This package ships with TypeScript type definitions. No additional `@types/` pac
 The following example demonstrates the minimal HTML structure required for a tooltip component. This is a base template without custom styling - you can apply your own CSS classes and styles as needed. The tooltip appears when hovering over the button.
 
 ```html
-<div class="hs-tooltip inline-block">
+<div class="hs-tooltip [--placement:auto] inline-block">
   <button type="button" class="hs-tooltip-toggle">
     Hover me
     <span class="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 transition-opacity inline-block absolute invisible z-10 py-1 px-2 bg-gray-900 text-white" role="tooltip">

@@ -45,6 +45,7 @@ declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI> implem
 	private onTouchEndListener;
 	private onCloserClickListener;
 	constructor(el: IHTMLElementFloatingUI, options?: {}, events?: {});
+	private getEventMode;
 	private elementMouseEnter;
 	private elementMouseLeave;
 	private toggleClick;
@@ -63,6 +64,7 @@ declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI> implem
 	private onClickHandler;
 	private onMouseEnterHandler;
 	private onMouseLeaveHandler;
+	private getNextFocusableElement;
 	private destroyFloatingUI;
 	private focusElement;
 	private setupFloatingUI;
@@ -81,6 +83,7 @@ declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI> implem
 	static close(target: HSDropdown | HTMLElement | string): void;
 	static closeCurrentlyOpened(evtTarget?: HTMLElement | null, isAnimated?: boolean): void;
 	private setupAccessibility;
+	private onTabOut;
 	private onFirstLetter;
 	private onArrowX;
 	private onStartEnd;

@@ -5,21 +5,36 @@ export interface ICarouselOptions {
 	currentIndex: number;
 	loadingClasses?: string | string[];
 	dotsItemClasses?: string;
-	mode?: "default" | "scroll-nav";
 	isAutoHeight?: boolean;
 	isAutoPlay?: boolean;
 	isCentered?: boolean;
 	isDraggable?: boolean;
+	dragThreshold?: number;
 	isInfiniteLoop?: boolean;
+	isItemCustomWidth?: boolean;
 	isRTL?: boolean;
 	isSnap?: boolean;
+	isScrollBlocked?: boolean;
 	hasSnapSpacers?: boolean;
 	slidesQty?: TCarouselOptionsSlidesQty | number;
+	slideBy?: TCarouselOptionsSlidesQty | number | null;
 	speed?: number;
 	updateDelay?: number;
+	mode?: "default" | "snap" | "bounded";
+	boundedOptions?: {
+		maxWidth?: [
+			number,
+			"px" | "rem"
+		];
+		slidesGap?: [
+			number,
+			"px" | "rem"
+		];
+		spacersWidth?: number | "auto";
+	};
 }
 export interface ICarousel {
-	options?: ICarouselOptions;
+	options: ICarouselOptions;
 	recalculateWidth(): void;
 	goToPrev(): void;
 	goToNext(): void;
@@ -48,6 +63,7 @@ declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICaro
 	private readonly isAutoPlay;
 	private readonly isCentered;
 	private readonly isDraggable;
+	private readonly dragThreshold;
 	private readonly isInfiniteLoop;
 	private readonly isRTL;
 	private readonly isSnap;
@@ -73,6 +89,7 @@ declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICaro
 	private isScrolling;
 	private isDragging;
 	private dragStartX;
+	private dragStartTime;
 	private initialTranslateX;
 	private readonly touchX;
 	private readonly touchY;
@@ -134,6 +151,7 @@ declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implements ICaro
 	private setTimer;
 	private resetTimer;
 	private detectDirection;
+	private getTargetTranslateX;
 	private calculateTransform;
 	private setTransform;
 	private setTranslate;

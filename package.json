@@ -1,6 +1,6 @@
 {
 	"name": "preline",
-	"version": "4.2.0",
+	"version": "5.0.0",
 	"description": "Preline UI is an open-source set of prebuilt UI components based on the utility-first Tailwind CSS framework.",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
@@ -31,13 +31,19 @@
 			"import": "./dist/utils.mjs",
 			"require": "./dist/utils.js"
 		},
+		"./variants.css": "./variants.css",
+		"./theme.css": "./theme.css",
+		"./datepicker-styles-utility.css": "./src/plugins/datepicker/styles-utility.css",
+		"./datepicker-styles.css": "./src/plugins/datepicker/styles.css",
 		"./package.json": "./package.json"
 	},
 	"sideEffects": [
 		"./dist/index.js",
 		"./dist/index.mjs",
 		"./dist/helper-clipboard.js",
-		"./dist/helper-clipboard.mjs"
+		"./dist/helper-clipboard.mjs",
+		"./src/auto/index.ts",
+		"./src/plugins/*/auto.ts"
 	],
 	"bin": {
 		"preline-theme-generator": "./skills/theme-generator/scripts/generate-theme.js"
@@ -97,6 +103,10 @@
 		"preline theme generator"
 	],
 	"author": "Preline Labs Ltd.",
+	"engines": {
+		"node": "22.22.2",
+		"npm": ">=10"
+	},
 	"license": "Licensed under MIT and Preline UI Fair Use License",
 	"publishConfig": {
 		"access": "public"
@@ -115,6 +125,7 @@
 		"@types/culori": "^4.0.1",
 		"apexcharts": "^4.5.0",
 		"culori": "^4.0.2",
+		"datatables.net": "^2.3.5",
 		"datatables.net-dt": "^2.2.2",
 		"dropzone": "^6.0.0-beta.2",
 		"nouislider": "^15.8.1",

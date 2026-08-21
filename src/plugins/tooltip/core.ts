@@ -1,6 +1,6 @@
 /*
  * HSTooltip
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -40,6 +40,8 @@ class HSTooltip extends HSBasePlugin<{}> implements ITooltip {
 	private onToggleMouseEnterListener: () => void;
 	private onToggleMouseLeaveListener: () => void;
 	private onToggleHandleListener: () => void;
+	private onToggleTouchListener: (evt: PointerEvent) => void;
+	private onDocumentTouchListener: (evt: PointerEvent) => void;
 
 	constructor(el: HTMLElement, options?: {}, events?: {}) {
 		super(el, options, events);
@@ -109,7 +111,26 @@ class HSTooltip extends HSBasePlugin<{}> implements ITooltip {
 		this.toggle.addEventListener('focus', this.onToggleFocusListener);
 		this.toggle.addEventListener('blur', this.onToggleBlurListener);
 
-		if (this.eventMode === 'click') {
+		if (this.eventMode === 'focus') {
+			this.onToggleTouchListener = (evt: PointerEvent) => {
+				if (evt.pointerType !== 'touch') return;
+				this.enter();
+			};
+			this.toggle.addEventListener(
+				'pointerdown',
+				this.onToggleTouchListener as EventListener,
+			);
+
+			this.onDocumentTouchListener = (evt: PointerEvent) => {
+				if (evt.pointerType !== 'touch') return;
+				if (this.el.contains(evt.target as Node)) return;
+				this.leave();
+			};
+			document.addEventListener(
+				'pointerdown',
+				this.onDocumentTouchListener as EventListener,
+			);
+		} else if (this.eventMode === 'click') {
 			this.onToggleClickListener = () => this.toggleClick();
 			this.toggle.addEventListener('click', this.onToggleClickListener);
 		} else if (this.eventMode === 'hover') {
@@ -300,8 +321,20 @@ class HSTooltip extends HSBasePlugin<{}> implements ITooltip {
 		this.toggle.removeEventListener('focus', this.onToggleFocusListener);
 		this.toggle.removeEventListener('blur', this.onToggleBlurListener);
 
-		// Remove eventMode-specific listeners
-		if (this.eventMode === 'click') {
+		if (this.eventMode === 'focus') {
+			if (this.onToggleTouchListener) {
+				this.toggle.removeEventListener(
+					'pointerdown',
+					this.onToggleTouchListener as EventListener,
+				);
+			}
+			if (this.onDocumentTouchListener) {
+				document.removeEventListener(
+					'pointerdown',
+					this.onDocumentTouchListener as EventListener,
+				);
+			}
+		} else if (this.eventMode === 'click') {
 			this.toggle.removeEventListener('click', this.onToggleClickListener);
 		} else if (this.eventMode === 'hover') {
 			this.toggle.removeEventListener(

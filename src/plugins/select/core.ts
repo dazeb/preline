@@ -1,6 +1,6 @@
 /*
  * HSSelect
- * @version: 4.2.0
+ * @version: 5.0.0
  * @author: Preline Labs Ltd.
  * @license: Licensed under MIT and Preline UI Fair Use License (https://preline.co/docs/license.html)
  * Copyright 2024 Preline Labs Ltd.
@@ -981,7 +981,12 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 		this.isLoading = true;
 
 		try {
-			const url = new URL(this.apiUrl);
+			let url: URL;
+			try {
+				url = new URL(this.apiUrl);
+			} catch {
+				url = new URL(this.apiUrl, window.location.origin);
+			}
 			const tempQuery = (this.lastQuery ?? '').trim().toLowerCase();
 			const tempQueryParams = new URLSearchParams(this.apiQuery ?? '');
 			const tempSearchQuery = this.apiSearchQueryKey ?? 'q';
@@ -1020,6 +1025,10 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 				...(this.apiOptions || {}),
 				signal: this.loadMoreAbortController.signal,
 			};
+
+			this.fireEvent('request', { url: url.toString() });
+			dispatch('request.hs.select', this.el, { url: url.toString() });
+
 			const response = await fetch(url.toString(), apiOpts);
 			const data = await response.json();
 
@@ -1031,6 +1040,12 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 			const items = this.apiDataPart
 				? (data[this.apiDataPart] ?? data.results ?? data)
 				: (data.results ?? data);
+
+			this.fireEvent('requestCompleted', { url: url.toString(), data: items });
+			dispatch('requestCompleted.hs.select', this.el, {
+				url: url.toString(),
+				data: items,
+			});
 			const getByPath = (obj: any, path: string) =>
 				path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
 			let total: number | null = null;
@@ -1065,7 +1080,16 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 			}
 		} catch (error) {
 			this.hasMore = false;
-			console.error('Error loading more options:', error);
+
+			if ((error as { name?: string })?.name !== 'AbortError') {
+				console.error('Error loading more options:', error);
+
+				this.fireEvent('requestCompleted', { url: this.apiUrl, error });
+				dispatch('requestCompleted.hs.select', this.el, {
+					url: this.apiUrl,
+					error,
+				});
+			}
 		} finally {
 			this.isLoading = false;
 		}
@@ -1612,10 +1636,14 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 		try {
 			let url;
 			try {
-				url = new URL(this.apiUrl, window.location.origin);
+				url = new URL(this.apiUrl);
 			} catch {
-				console.error('Invalid API URL:', this.apiUrl);
-				return null;
+				try {
+					url = new URL(this.apiUrl, window.location.origin);
+				} catch {
+					console.error('Invalid API URL:', this.apiUrl);
+					return null;
+				}
 			}
 			const queryParams = new URLSearchParams(this.apiQuery ?? '');
 			const options = this.apiOptions ?? {};
@@ -1647,12 +1675,31 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 			}
 
 			url.search = queryParams.toString();
+
+			this.fireEvent('request', { url: url.toString() });
+			dispatch('request.hs.select', this.el, { url: url.toString() });
+
 			const res = await fetch(url.toString(), tempOptions);
 			const json = await res.json();
+			const data = this.apiDataPart ? json[this.apiDataPart] : json;
 
-			return this.apiDataPart ? json[this.apiDataPart] : json;
+			this.fireEvent('requestCompleted', { url: url.toString(), data });
+			dispatch('requestCompleted.hs.select', this.el, {
+				url: url.toString(),
+				data,
+			});
+
+			return data;
 		} catch (err) {
-			console.error(err);
+			if ((err as { name?: string })?.name !== 'AbortError') {
+				console.error(err);
+
+				this.fireEvent('requestCompleted', { url: this.apiUrl, error: err });
+				dispatch('requestCompleted.hs.select', this.el, {
+					url: this.apiUrl,
+					error: err,
+				});
+			}
 		}
 	}
 
@@ -1933,7 +1980,10 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 		if (disabled) option.setAttribute('disabled', 'disabled');
 		if (selected) option.setAttribute('selected', 'selected');
 		if (id) option.setAttribute('data-id', id);
-		option.setAttribute('data-hs-select-option', JSON.stringify(options));
+		option.setAttribute(
+			'data-hs-select-option',
+			JSON.stringify(options ?? null),
+		);
 		option.innerText = title;
 
 		this.el.append(option);
@@ -2468,6 +2518,9 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 						if (this._isOpened) this.onStartEnd(false);
 					},
 					onTab: () => {
+						if (this._isOpened) this.close();
+					},
+					onShiftTab: () => {
 						if (this._isOpened) this.close();
 					},
 				},

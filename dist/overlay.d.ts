@@ -99,6 +99,7 @@ declare class HSOverlay extends HSBasePlugin<{}> implements IOverlay {
 	static close(target: HSOverlay | HTMLElement | string): void;
 	static minify(target: HSOverlay | HTMLElement | string, isMinified: boolean): void;
 	static setOpened(breakpoint: number, el: ICollectionItem<HSOverlay>): void;
+	private moveFocusWithinOverlay;
 	private setupAccessibility;
 	static on(evt: string, target: HSOverlay | HTMLElement | string, cb: Function): void;
 }

@@ -105,21 +105,36 @@ export interface ICarouselOptions {
 	currentIndex: number;
 	loadingClasses?: string | string[];
 	dotsItemClasses?: string;
-	mode?: "default" | "scroll-nav";
 	isAutoHeight?: boolean;
 	isAutoPlay?: boolean;
 	isCentered?: boolean;
 	isDraggable?: boolean;
+	dragThreshold?: number;
 	isInfiniteLoop?: boolean;
+	isItemCustomWidth?: boolean;
 	isRTL?: boolean;
 	isSnap?: boolean;
+	isScrollBlocked?: boolean;
 	hasSnapSpacers?: boolean;
 	slidesQty?: TCarouselOptionsSlidesQty | number;
+	slideBy?: TCarouselOptionsSlidesQty | number | null;
 	speed?: number;
 	updateDelay?: number;
+	mode?: "default" | "snap" | "bounded";
+	boundedOptions?: {
+		maxWidth?: [
+			number,
+			"px" | "rem"
+		];
+		slidesGap?: [
+			number,
+			"px" | "rem"
+		];
+		spacersWidth?: number | "auto";
+	};
 }
 export interface ICarousel {
-	options?: ICarouselOptions;
+	options: ICarouselOptions;
 	recalculateWidth(): void;
 	goToPrev(): void;
 	goToNext(): void;
@@ -134,6 +149,7 @@ export declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implement
 	private readonly isAutoPlay;
 	private readonly isCentered;
 	private readonly isDraggable;
+	private readonly dragThreshold;
 	private readonly isInfiniteLoop;
 	private readonly isRTL;
 	private readonly isSnap;
@@ -159,6 +175,7 @@ export declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implement
 	private isScrolling;
 	private isDragging;
 	private dragStartX;
+	private dragStartTime;
 	private initialTranslateX;
 	private readonly touchX;
 	private readonly touchY;
@@ -220,6 +237,7 @@ export declare class HSCarousel extends HSBasePlugin<ICarouselOptions> implement
 	private setTimer;
 	private resetTimer;
 	private detectDirection;
+	private getTargetTranslateX;
 	private calculateTransform;
 	private setTransform;
 	private setTranslate;
@@ -705,6 +723,7 @@ export declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI>
 	private onTouchEndListener;
 	private onCloserClickListener;
 	constructor(el: IHTMLElementFloatingUI, options?: {}, events?: {});
+	private getEventMode;
 	private elementMouseEnter;
 	private elementMouseLeave;
 	private toggleClick;
@@ -723,6 +742,7 @@ export declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI>
 	private onClickHandler;
 	private onMouseEnterHandler;
 	private onMouseLeaveHandler;
+	private getNextFocusableElement;
 	private destroyFloatingUI;
 	private focusElement;
 	private setupFloatingUI;
@@ -741,6 +761,7 @@ export declare class HSDropdown extends HSBasePlugin<{}, IHTMLElementFloatingUI>
 	static close(target: HSDropdown | HTMLElement | string): void;
 	static closeCurrentlyOpened(evtTarget?: HTMLElement | null, isAnimated?: boolean): void;
 	private setupAccessibility;
+	private onTabOut;
 	private onFirstLetter;
 	private onArrowX;
 	private onStartEnd;
@@ -989,6 +1010,7 @@ export declare class HSOverlay extends HSBasePlugin<{}> implements IOverlay {
 	static close(target: HSOverlay | HTMLElement | string): void;
 	static minify(target: HSOverlay | HTMLElement | string, isMinified: boolean): void;
 	static setOpened(breakpoint: number, el: ICollectionItem<HSOverlay>): void;
+	private moveFocusWithinOverlay;
 	private setupAccessibility;
 	static on(evt: string, target: HSOverlay | HTMLElement | string, cb: Function): void;
 }
@@ -1702,6 +1724,8 @@ export declare class HSTooltip extends HSBasePlugin<{}> implements ITooltip {
 	private onToggleMouseEnterListener;
 	private onToggleMouseLeaveListener;
 	private onToggleHandleListener;
+	private onToggleTouchListener;
+	private onDocumentTouchListener;
 	constructor(el: HTMLElement, options?: {}, events?: {});
 	private toggleClick;
 	private toggleFocus;

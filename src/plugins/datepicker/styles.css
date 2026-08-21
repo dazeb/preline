@@ -1,5 +1,3 @@
-@import "tailwindcss";
-
 .vc {
   @apply bg-white border border-border shadow-lg rounded-xl;
 
@@ -25,7 +23,7 @@
 }
 
 .vc-week {
-  @apply flex pb-1.5;
+  @apply grid grid-cols-7 justify-items-center pb-1.5;
 }
 
 .vc-week__day {
@@ -42,7 +40,11 @@
 }
 
 .vc-dates {
-  @apply grid grid-cols-7 gap-y-0.5;
+  @apply grid grid-cols-1 gap-y-0.5;
+}
+
+.vc-dates__row {
+  @apply grid grid-cols-7 justify-items-center;
 }
 
 .vc-date {
@@ -134,7 +136,7 @@
     }
 
     &:not([data-vc-date-today]):not([data-vc-date-hover="first-and-last"]) {
-      @apply bg-line-1;
+      @apply bg-primary-50;
     }
   }
 }
