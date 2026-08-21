@@ -1610,7 +1610,13 @@ class HSSelect extends HSBasePlugin<ISelectOptions> implements ISelect {
 
 	private async apiRequest(val = '', signal?: AbortSignal): Promise<any> {
 		try {
-			const url = new URL(this.apiUrl);
+			let url;
+			try {
+				url = new URL(this.apiUrl, window.location.origin);
+			} catch {
+				console.error('Invalid API URL:', this.apiUrl);
+				return null;
+			}
 			const queryParams = new URLSearchParams(this.apiQuery ?? '');
 			const options = this.apiOptions ?? {};
 			const tempOptions = { ...(options as any) } as RequestInit;
