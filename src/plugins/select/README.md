@@ -161,6 +161,8 @@ Data options are specified in the `data-hs-select` attribute as a JSON object.
 | `:preventSearchInsideDescription` | Inside `data-hs-select` | boolean | `false` | Prevents searching inside the description when set to `true`. |
 | `:mode` | Inside `data-hs-select` | `'default'` \| `'tags'` | `'default'` | Define a select mode. `default` for single/multiple selection, `tags` for tag-based selection. |
 | `:scrollToSelected` | Inside `data-hs-select` | boolean | `false` | Scroll to the selected option when the dropdown is opened. |
+| `:value` | Inside `data-hs-select` | string \| string[] | - | Defines the initial selected value. Use an array when the select is multiple. |
+| `:viewport` | Inside `data-hs-select` | string | - | Defines the viewport selector used when recalculating dropdown direction and available space. |
 | `:toggleTag` | Inside `data-hs-select` | string (HTML markup) | - | Define a markup for the select toggle. Note: `data-title` is required if you are using a custom placeholder. |
 | `:toggleClasses` | Inside `data-hs-select` | string | - | Define CSS classes for the selects' toggle. CSS classes must be separated by a space. |
 | `:toggleSeparators` | Inside `data-hs-select` | object | - | Define separators for the selects' toggle. |
@@ -181,6 +183,11 @@ Data options are specified in the `data-hs-select` attribute as a JSON object.
 | `:dropdownAutoPlacement` | Inside `data-hs-select` | boolean | `false` | Automatically determine the placement of the menu based on the available space. Requires the `Floating UI` and `dropdownScope` option to be `window`. |
 | `:dropdownVerticalFixedPlacement` | Inside `data-hs-select` | `"top"` \| `"bottom"` \| null | `null` | Specifies a fixed vertical position for the menu when opened. It will not change when scrolling. |
 | `:dropdownScope` | Inside `data-hs-select` | `"window"` \| `"parent"` | `"parent"` | Determines whether the dropdown will be moved outside the parent, for correct display in elements with hidden overflow. Requires the `Floating UI` plugin. |
+| `:dropdownDirectionClasses` | Inside `data-hs-select` | `{ top?: string; bottom?: string; }` | `null` | Defines classes that are applied when the dropdown is placed above or below the toggle. |
+| `:dropdownSpace` | Inside `data-hs-select` | number | `10` | Defines the spacing in pixels between the toggle and dropdown. |
+| `:searchTemplate` | Inside `data-hs-select` | string (HTML markup) | `"<input type=\"text\">"` | This option is only available when `hasSearch: true`. Define a custom markup for the search input. |
+| `:searchWrapperTemplate` | Inside `data-hs-select` | string (HTML markup) | `"<div></div>"` | This option is only available when `hasSearch: true`. Define a custom markup for the search wrapper. |
+| `:searchWrapperClasses` | Inside `data-hs-select` | string | `"bg-white p-2 sticky top-0"` | This option is only available when `hasSearch: true`. Define CSS classes for the search wrapper. |
 | `:searchId` | Inside `data-hs-select` | string | - | This option is only available when `hasSearch: true`. This option is useful if there is a need to associate a `label` outside the initialized element with the search input. |
 | `:searchLimit` | Inside `data-hs-select` | number | `Infinity` | This option is only available when `hasSearch: true`. If this option is enabled, the search will display only the first 'n' matching items. |
 | `:isSearchDirectMatch` | Inside `data-hs-select` | boolean | `true` | This option is only available when `hasSearch: true`. If the option is disabled, then in the search results you will be able to see non-direct matches by text. For example, if you entered `england` in the search field, then `Eng-land`, `Eng.land`, `Eng_land` will also be shown. |
@@ -193,7 +200,6 @@ Data options are specified in the `data-hs-select` attribute as a JSON object.
 | `:optionTemplate` | Inside `data-hs-select` | string (HTML markup) | - | Define template for the single option. It could contain: `data-icon` if target option tag has `data-hs-select-option:icon`, `data-title` the text from the target option, `data-description` if target option tag has `data-hs-select-option:description`. |
 | `:optionTag` | Inside `data-hs-select` | string (HTML markup) | - | Define a markup for the single option. |
 | `:optionClasses` | Inside `data-hs-select` | string | - | Define CSS classes for the single option. CSS classes must be separated by a space. |
-| `:optionGroupTemplate` | Inside `data-hs-select` | string (HTML markup) | - | Define template for the single option group. |
 | `:optgroupTag` | Inside `data-hs-select` | string (HTML markup) | - | Define a markup for the single option group. |
 | `:optgroupClasses` | Inside `data-hs-select` | string | - | Define CSS classes for the single option group. CSS classes must be separated by a space. |
 | `:extraMarkup` | Inside `data-hs-select` | string \| array (HTML markup) | - | Define a markup that could be extra added to the wrapper of the select for the decoration reasons. If it contains the `--prevent-click` class, clicking on this element will not trigger the open function. |
@@ -206,14 +212,16 @@ Data options are specified in the `data-hs-select` attribute as a JSON object.
 | `:apiOptions` | Inside `data-hs-select` | RequestInit \| null | `null` | Defines options for the fetch function. |
 | `:apiDataPart` | Inside `data-hs-select` | string \| null | `null` | If data is in some first level parameter, then it allows you to specify the name of this parameter to extract the data. |
 | `:apiSearchQueryKey` | Inside `data-hs-select` | string \| null | `null` | Defines the key for the query search parameter. |
-| `:apiFieldsMap` | Inside `data-hs-select` | `{ id: string; title: string; val?: string; icon?: string \| null; description?: string \| null; } \| null` | `null` | Allows you to convert fields from the API to the fields required for the plugin to work. |
+| `:apiFieldsMap` | Inside `data-hs-select` | `{ id: string; title: string; val?: string; icon?: string \| null; description?: string \| null; page?: string; offset?: string; limit?: string; pageStart?: string; totalPath?: string; [key: string]: unknown; } \| null` | `null` | Allows you to convert fields from the API to the fields required for the plugin to work. `page`, `offset`, and `limit` customize pagination parameter names for remote data. |
 | `:apiLoadMore` | Inside `data-hs-select` | `boolean \| { perPage?: number; scrollThreshold?: number; }` | `false` | Defines the options for the load more feature. |
+| `:apiPageStart` | Inside `data-hs-select` | number | - | Defines the first page or offset value used for remote option loading. If omitted, page-based loading starts from `1` and offset-based loading starts from `0`. |
+| `:apiTotalPath` | Inside `data-hs-select` | string \| null | `null` | Defines the response path used to read the total result count for remote option loading. |
 | `:apiSelectedValues` | Inside `data-hs-select` | `string \| string[] \| null` | `null` | Allows to preselect values when loading options from an API. Can be a single value or an array of values for multiple selection. |
 | `:apiIconTag` | Inside `data-hs-select` | string \| null | `null` | Allows to define an `img` tag that will be used when rendering options and in the trigger button. |
 | `data-hs-select-option` | Option element | object | - | Allows to define the parameters for the single option. Should be added to the option. |
 | `:description` | Inside `data-hs-select-option` | string | - | Allows to define the description of the option inside the element that have `data-description` attribute. |
 | `:icon` | Inside `data-hs-select-option` | string | - | Allows to define the icon of the option inside the element that have `data-icon` attribute. |
-| `:additinalClasses` | Inside `data-hs-select-option` | `[string, string[]][]` | - | Allows to define additional classes. The first string is the selector of the element to apply the classes to, the second string is an array of classes to apply. If the selector is set to `null`, the classes will be applied to the option itself. |
+| `:additionalClasses` | Inside `data-hs-select-option` | `[string, string[]][]` | - | Allows to define additional classes. The first string is the selector of the element to apply the classes to, the second string is an array of classes to apply. If the selector is set to `null`, the classes will be applied to the option itself. |
 | `:apiFields` | Inside `data-hs-select-option` | `{ [key: string]: unknown; }` | - | Allows to define the fields of the option from the API. |
 
 ### Tailwind Modifiers
